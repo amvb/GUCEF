@@ -547,7 +547,7 @@ CTaskManager::StartTask( CTaskConsumerPtr taskConsumer ,
     {
         UInt32 threadId = taskConsumer->GetTaskDelegator()->GetThreadID();
         GUCEF_ERROR_LOG( LOGLEVEL_NORMAL, "TaskManager: Cannot start task because the taskConsumer given already has a delegator (thread: " + ToString( threadId ) + ") assigned" );
-        return false;
+        return true; // @TODO: ask Dinand, but to me it needs to be true so we are able to reuse the TaskDelegator.
     }
 
     if ( !m_acceptNewWork )
@@ -709,7 +709,7 @@ CTaskManager::RequestTaskToStop( const UInt32 taskID   ,
             }
         }
     }
-    return false;
+    return true; // If there is not any taskConsumer then the RequestTaskToStop succeeds
 }
 
 /*-------------------------------------------------------------------------*/
@@ -756,7 +756,7 @@ CTaskManager::WaitForTaskToFinish( const UInt32 taskId ,
             }
         }
     }
-    return false;
+    return true; // There is no Task to wait for, therefore we can assume it is already finished
 }
 
 /*-------------------------------------------------------------------------*/

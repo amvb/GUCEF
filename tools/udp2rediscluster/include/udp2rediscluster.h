@@ -459,6 +459,7 @@ class Udp2RedisCluster : public CORE::CObserver
 
     bool m_isInStandby;
     bool m_globalStandbyEnabled;
+    bool m_autoChannelNumbering;
     CORE::UInt16 m_udpStartPort;
     CORE::UInt16 m_channelCount;
     CORE::Int32 m_redisStreamStartChannelID;

@@ -1205,6 +1205,7 @@ Udp2RedisClusterChannel::WaitForTaskToFinish( CORE::Int32 timeoutInMs )
             else
             {
                 GUCEF_ERROR_LOG( CORE::LOGLEVEL_IMPORTANT, "Udp2RedisClusterChannel:WaitForTaskToFinish: Failed waiting for dedicated redis writer task to stop for channel " + CORE::Int32ToString( m_channelSettings.channelId ) );
+                return false;
             }
         }
         return true;
@@ -1833,7 +1834,7 @@ Udp2RedisCluster::SetStandbyMode( bool putInStandbyMode )
                 GUCEF_LOG( CORE::LOGLEVEL_IMPORTANT, "Udp2RedisCluster:SetStandbyMode( false ): Found channel which no longer has corresponding channel settings, deleting channel with ID " + CORE::Int32ToString( channelId ) );
                 m_channels.erase( i );
                 i = m_channels.begin();
-                break;
+                continue;
             }
             ++i;
         }
@@ -1903,6 +1904,7 @@ Udp2RedisCluster::LoadConfig( const CORE::CValueList& appConfig   ,
 
     m_transmitMetrics = CORE::StringToBool( appConfig.GetValueAlways( "TransmitMetrics" ), true );
     m_globalStandbyEnabled = CORE::StringToBool( appConfig.GetValueAlways( "GlobalStandbyEnabled" ), false );
+    m_autoChannelNumbering = CORE::StringToBool(appConfig.GetValueAlways("AutoChannelNumbering"), true);
 
     m_udpStartPort = CORE::StringToUInt16( CORE::ResolveVars( appConfig.GetValueAlways( "UdpStartPort", "20000" ) ) );
     m_channelCount = CORE::StringToUInt16( CORE::ResolveVars( appConfig.GetValueAlways( "ChannelCount", "1" ) ) );
@@ -1926,8 +1928,17 @@ Udp2RedisCluster::LoadConfig( const CORE::CValueList& appConfig   ,
     CORE::UInt32 currentCpu = 0;
     CORE::UInt16 udpPort = m_udpStartPort;
     CORE::Int32 maxChannelId = m_redisStreamStartChannelID + m_channelCount;
+    m_channelSettings.clear(); // making sure the new channels settings is clean
     for ( CORE::Int32 channelId = m_redisStreamStartChannelID; channelId < maxChannelId; ++channelId )
     {
+        if (!m_autoChannelNumbering) {
+            CORE::CString settingName = "ChannelSetting." + CORE::Int32ToString(channelId) + ".RedisStreamName";
+            CORE::CString settingValue = appConfig.GetValueAlways(settingName);
+            if (settingValue.IsNULLOrEmpty()) {
+                continue; // skip this channel
+            }
+        }
+
         ChannelSettings& channelSettings = m_channelSettings[ channelId ];
 
         channelSettings.channelId = channelId;
